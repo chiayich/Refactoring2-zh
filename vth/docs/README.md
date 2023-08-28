@@ -1,6 +1,10 @@
-# 目录
+---
+title: docs
+icon: lightbulb
+index: false
+---
 
-<img src="./cover.jpg" style="width: 28%" />
+## 重构
 
 - [第 1 章 重构，第一个示例](ch1.md)
 - [第 2 章 重构的原则](ch2.md)

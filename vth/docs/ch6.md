@@ -14,28 +14,29 @@
 
 反向重构：内联函数（115）
 
-![](./figures/image00284.jpeg)
+![](figures/image00284.jpeg)
 
-```js
-function printOwing(invoice) {
-  printBanner();
-  let outstanding = calculateOutstanding();
+```python
+def print_owing(invoice):
+    print_banner()
+    outstanding = calculate_outstanding()
 
-  //print details
-  console.log(`name: ${invoice.customer}`);
-  console.log(`amount: ${outstanding}`);
-}
+    # print details
 
-function printOwing(invoice) {
-  printBanner();
-  let outstanding = calculateOutstanding();
-  printDetails(outstanding);
+    print(f'name: {invoice.customer}')
+    print(f'amount: {outstanding}')
 
-  function printDetails(outstanding) {
-    console.log(`name: ${invoice.customer}`);
-    console.log(`amount: ${outstanding}`);
-  }
-}
+
+def print_owing_refactor(invoice):
+    print_banner()
+    outstanding = calculate_outstanding()
+
+    # print details
+    def print_details():
+        print(f'name: {invoice.customer}')
+        print(f'amount: {outstanding}')
+
+    print_details()
 ```
 
 ### 动机
@@ -95,93 +96,85 @@ function printOwing(invoice) {
 
 在最简单的情况下，提炼函数易如反掌。请看下列函数：
 
-```js
-function printOwing(invoice) {
-  let outstanding = 0;
+```python
+def print_owing(invoice):
+    outstanding = 0
 
-  console.log("***********************");
-  console.log("**** Customer Owes ****");
-  console.log("***********************");
+    print("***********************")
+    print("**** Customer Owes ****")
+    print("***********************")
 
-  // calculate outstanding
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
+    #  calculate outstanding
+    for o in invoice.orders:
+        outstanding += o.amount
 
-  // record due date
-  const today = Clock.today;
-  invoice.dueDate = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate() + 30
-  );
+    # record due date
+    today = Clock.today
+    from datetime import timedelta
+    invoice.dueDate = today + timedelta(days=30)
 
-  //print details
-  console.log(`name: ${invoice.customer}`);
-  console.log(`amount: ${outstanding}`);
-  console.log(`due: ${invoice.dueDate.toLocaleDateString()}`);
-}
+    # print details
+    print(f'name: {invoice.customer}')
+    print(f'amount: {outstanding}')
+    print(f'due: {invoice.dueDate.toLocaleDateString()}')
 ```
 
 你可能会好奇 Clock.today 是干什么的。这是一个 Clock Wrapper[mf-cw]，也就是封装系统时钟调用的对象。我尽量避免在代码中直接调用 Date.now()这样的函数，因为这会导致测试行为不可预测，以及在诊断故障时难以复制出错时的情况。
 
 我们可以轻松提炼出“打印横幅”的代码。我只需要剪切、粘贴再插入一个函数调用动作就行了：
 
-```js
-function printOwing(invoice) {
-  let outstanding = 0;
 
-  printBanner();
+```python
+def print_owing(invoice):
+    outstanding = 0
 
-  // calculate outstanding
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
+    print_banner()
 
-  // record due date
-  const today = Clock.today;
-  invoice.dueDate = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate() + 30
-  );
+    #  calculate outstanding
+    for o in invoice.orders:
+        outstanding += o.amount
 
-  //print details
-  console.log(`name: ${invoice.customer}`);
-  console.log(`amount: ${outstanding}`);
-  console.log(`due: ${invoice.dueDate.toLocaleDateString()}`);
-}
-function printBanner() {
-  console.log("***********************");
-  console.log("**** Customer Owes ****");
-  console.log("***********************");
-}
+    # record due date
+    today = Clock.today
+    from datetime import timedelta
+    invoice.dueDate = today + timedelta(days=30)
+
+    # print details
+    print(f'name: {invoice.customer}')
+    print(f'amount: {outstanding}')
+    print(f'due: {invoice.dueDate.toLocaleDateString()}')
+
+def print_banner():
+    print("***********************")
+    print("**** Customer Owes ****")
+    print("***********************")
+
 ```
 
 同样，我还可以把“打印详细信息”部分也提炼出来：
 
-```js
-function printOwing(invoice) {
- let outstanding = 0;
 
- printBanner();
+```python
+def print_owing(invoice):
+    outstanding = 0
+    print_banner()
 
- // calculate outstanding
- for (const o of invoice.orders) {
-  outstanding += o.amount;
- }
+    #  calculate outstanding
+    for o in invoice.orders:
+        outstanding += o.amount
 
- // record due date
- const today = Clock.today;
- invoice.dueDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30);
+    # record due date
+    today = Clock.today
+    from datetime import timedelta
+    invoice.dueDate = today + timedelta(days=30)
 
- printDetails();
-
- function printDetails() {
-  console.log(`name: ${invoice.customer}`);
-  console.log(`amount: ${outstanding}`);
-  console.log(`due: ${invoice.dueDate.toLocaleDateString()}`);
-}
+    # print details
+    print_details()
+    
+def print_details():
+    print(f'name: {invoice.customer}')
+    print(f'amount: {outstanding}')
+    print(f'due: {invoice.dueDate.toLocaleDateString()}')
 ```
 
 看起来提炼函数是一个极其简单的重构。但很多时候，情况会变得比较复杂。
@@ -192,81 +185,78 @@ function printOwing(invoice) {
 
 局部变量最简单的情况是：被提炼代码段只是读取这些变量的值，并不修改它们。这种情况下我可以简单地将它们当作参数传给目标函数。所以，如果我面对下列函数：
 
-```js
-function printOwing(invoice) {
- let outstanding = 0;
+```python
+def print_owing(invoice):
+    outstanding = 0
 
- printBanner();
+    print_banner()
 
- // calculate outstanding
- for (const o of invoice.orders) {
-  outstanding += o.amount;
- }
+    #  calculate outstanding
+    for o in invoice.orders:
+        outstanding += o.amount
 
- // record due date
- const today = Clock.today;
- invoice.dueDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30);
+    # record due date
+    today = Clock.today
+    from datetime import timedelta
+    invoice.dueDate = today + timedelta(days=30)
 
- //print details
- console.log(`name: ${invoice.customer}`);
- console.log(`amount: ${outstanding}`);
- console.log(`due: ${invoice.dueDate.toLocaleDateString()}`);
+    # print details
+    print(f'name: {invoice.customer}')
+    print(f'amount: {outstanding}')
+    print(f'due: {invoice.dueDate.toLocaleDateString()}')
 ```
 
 就可以将“打印详细信息”这一部分提炼为带两个参数的函数：
 
-```js
-function printOwing(invoice) {
-  let outstanding = 0;
+```python
+def print_owing(invoice):
+    outstanding = 0
 
-  printBanner();
+    print_banner()
 
-  // calculate outstanding
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
+    #  calculate outstanding
+    for o in invoice.orders:
+        outstanding += o.amount
 
-  // record due date
-  const today = Clock.today;
-  invoice.dueDate = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate() + 30
-  );
+    # record due date
+    today = Clock.today
+    from datetime import timedelta
+    invoice.dueDate = today + timedelta(days=30)
 
-  printDetails(invoice, outstanding);
-}
-function printDetails(invoice, outstanding) {
-  console.log(`name: ${invoice.customer}`);
-  console.log(`amount: ${outstanding}`);
-  console.log(`due: ${invoice.dueDate.toLocaleDateString()}`);
-}
+    # print details
+    print_details(invoice, outstanding)
+
+
+def print_details(invoice, outstanding):
+    print(f'name: {invoice.customer}')
+    print(f'amount: {outstanding}')
+    print(f'due: {invoice.dueDate.toLocaleDateString()}')
+
 ```
 
 如果局部变量是一个数据结构（例如数组、记录或者对象），而被提炼代码段又修改了这个结构中的数据，也可以如法炮制。所以，“设置到期日”的逻辑也可以用同样的方式提炼出来：
 
-```js
-function printOwing(invoice) {
-  let outstanding = 0;
+```python
+def print_owing(invoice):
+    outstanding = 0
 
-  printBanner();
+    print_banner()
 
-  // calculate outstanding
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
+    #  calculate outstanding
+    for o in invoice.orders:
+        outstanding += o.amount
+ 
+    record_due_date(invoice)
 
-  recordDueDate(invoice);
-  printDetails(invoice, outstanding);
-}
-function recordDueDate(invoice) {
-  const today = Clock.today;
-  invoice.dueDate = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate() + 30
-  );
-}
+    # print details
+    print_details(invoice, outstanding)
+
+def record_due_date(invoice):
+    # record due date
+    today = Clock.today
+    from datetime import timedelta
+    invoice.dueDate = today + timedelta(days=30)
+
 ```
 
 ### 范例：对局部变量再赋值
@@ -277,104 +267,103 @@ function recordDueDate(invoice) {
 
 比较糟糕的情况是：被提炼代码段之外的代码也使用了这个变量。此时我需要返回修改后的值。我会用下面这个已经很眼熟的函数来展示该怎么做：
 
-```js
-function printOwing(invoice) {
-  let outstanding = 0;
+```python
+def print_owing(invoice):
+    outstanding = 0
 
-  printBanner();
+    print_banner()
 
-  // calculate outstanding
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
+    #  calculate outstanding
+    for o in invoice.orders:
+        outstanding += o.amount
+ 
+    record_due_date(invoice)
 
-  recordDueDate(invoice);
-  printDetails(invoice, outstanding);
-}
+    # print details
+    print_details(invoice, outstanding)
 ```
 
 前面的重构我都一步到位地展示了结果，因为它们都很简单。但这次我会一步一步展示“做法”里的每个步骤。
 
 首先，把变量声明移动到使用处之前。
 
-```js
-function printOwing(invoice) {
-  printBanner();
+```python
+def print_owing(invoice):
 
-  // calculate outstanding
-  let outstanding = 0;
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
+    print_banner()
 
-  recordDueDate(invoice);
-  printDetails(invoice, outstanding);
-}
+    #  calculate outstanding
+    outstanding = 0
+    for o in invoice.orders:
+        outstanding += o.amount
+ 
+    record_due_date(invoice)
+
+    # print details
+    print_details(invoice, outstanding)
 ```
 
 然后把想要提炼的代码复制到目标函数中。
 
-```js
-function printOwing(invoice) {
-  printBanner();
 
-  // calculate outstanding
-  let outstanding = 0;
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
+```python
+def print_owing(invoice):
 
-  recordDueDate(invoice);
-  printDetails(invoice, outstanding);
-}
-function calculateOutstanding(invoice) {
-  let outstanding = 0;
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
-  return outstanding;
-}
+    print_banner()
+
+    #  calculate outstanding
+    outstanding = 0
+    for o in invoice.orders:
+        outstanding += o.amount
+
+    record_due_date(invoice)
+
+    # print details
+    print_details(invoice, outstanding)
+    
+def calculate_outstanding(invoice):
+        #  calculate outstanding
+    outstanding = 0
+    for o in invoice.orders:
+        outstanding += o.amount
+    return outstanding
 ```
 
 由于 outstanding 变量的声明已经被搬移到提炼出的新函数中，就不需要再将其作为参数传入了。outstanding 是提炼代码段中唯一被重新赋值的变量，所以我可以直接返回它。
 
 我的 JavaScript 环境在编译期提供不了任何价值——简直还不如文本编辑器的语法分析有用，所以“做法”里的“编译”一步可以跳过了。下一件事是修改原来的代码，令其调用新函数。新函数返回了修改后的 outstanding 变量值，我需要将其存入原来的变量中。
 
-```js
-function printOwing(invoice) {
-  printBanner();
-  let outstanding = calculateOutstanding(invoice);
-  recordDueDate(invoice);
-  printDetails(invoice, outstanding);
-}
-function calculateOutstanding(invoice) {
-  let outstanding = 0;
-  for (const o of invoice.orders) {
-    outstanding += o.amount;
-  }
-  return outstanding;
-}
+```python
+def print_owing(invoice):
+    print_banner()
+    outstanding = calculate_outstanding(invoice)
+    record_due_date(invoice)
+    print_details(invoice, outstanding)
+
+def calculate_outstanding(invoice):
+        #  calculate outstanding
+    outstanding = 0
+    for o in invoice.orders:
+        outstanding += o.amount
+    return outstanding
 ```
 
 在收工之前，我还要修改返回值的名字，使其符合我一贯的编码风格。
 
-```js
-function printOwing(invoice) {
-  printBanner();
-  const outstanding = calculateOutstanding(invoice);
-  recordDueDate(invoice);
-  printDetails(invoice, outstanding);
-}
-function calculateOutstanding(invoice) {
-  let result = 0;
-  for (const o of invoice.orders) {
-    result += o.amount;
-  }
-  return result;
-}
-```
+```python
+def print_owing(invoice):
+    print_banner()
+    outstanding = calculate_outstanding(invoice)
+    record_due_date(invoice)
+    print_details(invoice, outstanding)
 
-我还顺手把原来的 outstanding 变量声明成 const 的，令其在初始化之后不能再次被赋值。
+def calculate_outstanding(invoice):
+        #  calculate outstanding
+    result = 0
+    for o in invoice.orders:
+        result += o.amount
+    return result
+```
 
 这时候，你可能会问：“如果需要返回的变量不止一个，又该怎么办呢？”
 
@@ -388,21 +377,18 @@ function calculateOutstanding(invoice) {
 
 反向重构：提炼函数（106）
 
-![](./figures/image00286.jpeg)
+![](figures/image00286.jpeg)
 
-```js
-function getRating(driver) {
- return moreThanFiveLateDeliveries(driver) ? 2 : 1;
-}
+```python
+def get_rating(driver):
+ return  2 if more_than_five_late_deliveries(driver) else 1
 
-function moreThanFiveLateDeliveries(driver) {
- return driver.numberOfLateDeliveries &gt; 5;
-}
+def more_than_five_late_deliveries(driver):
+ return driver.numberOfLateDeliveries > 5
 
 
-function getRating(driver) {
- return (driver.numberOfLateDeliveries &gt; 5) ? 2 : 1;
-}
+def get_rating(driver):
+    return 2 if driver.number_of_late_deliveries > 5 else 1
 ```
 
 ### 动机
@@ -527,7 +513,7 @@ function reportLines(aCustomer) {
 
 反向重构：内联变量（123）
 
-![](./figures/image00288.jpeg)
+![](figures/image00288.jpeg)
 
 ```js
 return (
@@ -720,7 +706,7 @@ class Order {
 
 反向重构：提炼变量（119）
 
-![](./figures/image00290.jpeg)
+![](figures/image00290.jpeg)
 
 ```js
 let basePrice = anOrder.basePrice;
@@ -763,7 +749,7 @@ return anOrder.basePrice & gt;
 
 别名：修改签名（Change Signature）
 
-![](./figures/image00292.jpeg)
+![](figures/image00292.jpeg)
 
 ```js
 function circum(radius) {...}
@@ -1019,7 +1005,7 @@ function inNewEngland(stateCode) {
 
 曾用名：封装字段（Encapsulate Field）
 
-![](./figures/image00293.jpeg)
+![](figures/image00293.jpeg)
 
 ```js
 let defaultOwner = { firstName: "Martin", lastName: "Fowler" };
@@ -1197,7 +1183,7 @@ class Person {
 
 ## 6.7 变量改名（Rename Variable）
 
-![](./figures/image00294.jpeg)
+![](figures/image00294.jpeg)
 
 ```js
 let a = height * width;
@@ -1305,7 +1291,7 @@ const cpyNm = companyName;
 
 ## 6.8 引入参数对象（Introduce Parameter Object）
 
-![](./figures/image00296.jpeg)
+![](figures/image00296.jpeg)
 
 ```js
 function amountInvoiced(startDate, endDate) {...}
@@ -1500,7 +1486,7 @@ function readingsOutsideRange(station, range) {
 
 ## 6.9 函数组合成类（Combine Functions into Class）
 
-![](./figures/image00298.jpeg)
+![](figures/image00298.jpeg)
 
 ```js
 function base(aReading) {...}
@@ -1720,7 +1706,7 @@ const taxableCharge = aReading.taxableCharge;
 
 ## 6.10 函数组合成变换（Combine Functions into Transform）
 
-![](./figures/image00300.jpeg)
+![](figures/image00300.jpeg)
 
 ```js
 function base(aReading) {...}
@@ -1932,7 +1918,7 @@ const taxableCharge = aReading.taxableCharge;
 
 ## 6.11 拆分阶段（Split Phase）
 
-![](./figures/image00302.jpeg)
+![](figures/image00302.jpeg)
 
 ```js
 const orderData = orderString.split(/\s+/);
